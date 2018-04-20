@@ -44,16 +44,10 @@
                 //});
             };
 
-    var length = 0
 function readFileByChunk(file, callback){
-    //129.82.44.138
-    //socket= new WebSocket('ws://frankfort.cs.colostate.edu:45309');
-    //socket.onopen= function() {
-    //        socket.send('hello');
-    //        console.log("WORKING")
-    //};
     var CHUNK_SIZE = 1000000;
     var offset = 0;
+    var length = 0
     var fr = new FileReader();
     toBeSent = ""
     fr.onload = function() {
