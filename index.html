@@ -1,0 +1,89 @@
+<html>
+    <head>
+
+    </head>
+    <body>
+        <input type=file id=f><br>
+        <p id="done"></p>
+    </body>
+
+
+
+    <script
+        src="https://code.jquery.com/jquery-3.3.1.js"
+        integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60="
+        crossorigin="anonymous"></script>
+
+
+    <script>
+        document.getElementById('f').onchange = function() {
+            if (!this.files.length) return;
+            readFileByChunk(this.files[0], function(result){
+                result += "\r\n"
+                console.log(result)
+
+            $.post("http://olympia.cs.colostate.edu:45409",result)
+            $.post("http://boise.cs.colostate.edu:45409",result)
+            $.post("http://albany.cs.colostate.edu:45409",result)
+            $.post("http://annapolis.cs.colostate.edu:45409",result)
+            $.post("http://baton-rouge.cs.colostate.edu:45409", result)
+            $.post("http://bismarck.cs.colostate.edu:45409",result)
+            $.post("http://sacramento.cs.colostate.edu:45409", result)
+            $.post("http://carson-city.cs.colostate.edu:45409", result)
+            $.post("http://charleston.cs.colostate.edu:45409", result)
+            $.post("http://cheyenne.cs.colostate.edu:45409", result)
+            $.post("http://austin.cs.colostate.edu:45409", result)
+            $.post("http://salem.cs.colostate.edu:45409", result)
+            $.post("http://phoenix.cs.colostate.edu:45409", result)
+            $.post("http://pierre.cs.colostate.edu:45409", result)
+            $.post("http://salt-lake-city.cs.colostate.edu:45409",result)
+                //$.post("http://colombia.cs.colostate.edu:45402",result);
+            });
+                //findColumnLength(this.files[0], function(columnLength) {
+                //    document.getElementById('out').value = columnLength;
+                //});
+            };
+
+    var length = 0
+function readFileByChunk(file, callback){
+    //129.82.44.138
+    //socket= new WebSocket('ws://frankfort.cs.colostate.edu:45309');
+    //socket.onopen= function() {
+    //        socket.send('hello');
+    //        console.log("WORKING")
+    //};
+    var CHUNK_SIZE = 1000000;
+    var offset = 0;
+    var fr = new FileReader();
+    toBeSent = ""
+    fr.onload = function() {
+        $("#done").text("REMAINING: ", ((file.size - offset) / file.size * 100).toFixed(2), "%");
+        console.log("REMAINING: ", ((file.size - offset) / file.size * 100).toFixed(2), "%");
+        lines = fr.result.split(/\r?\n/);
+        lines.forEach(function(element) {
+            if(element.startsWith("Subject:")){
+                length+=1
+                toBeSent += element + "\n"
+            }
+        });
+        offset += CHUNK_SIZE;
+        seek();
+    }
+    fr.onerror = function() {
+        callback("ERROR")
+    };
+
+    seek();
+
+    function seek() {
+        if (offset >= file.size) {
+            console.log("DONE")
+            return callback(length + "\n"+toBeSent);
+        }
+        var slice = file.slice(offset, offset + CHUNK_SIZE);
+        fr.readAsText(slice);
+    }
+}
+
+    </script>
+</html>
