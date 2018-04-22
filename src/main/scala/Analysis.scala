@@ -24,10 +24,11 @@ object Analysis {
       import spark.implicits._
       
       //Stopwords - used to improve topic discovery
-      val stopwordsFile = spark.read.textFile("/stopwords").rdd
+      val stopwordsFile = spark.read.textFile("/stopwords").rdd.collect.toSet
       /*
-      val subjects = spark.read.textFile("/testFile").rdd.map(
-        x => x.toLowerCase.split(" |,")
+      val subjects = spark.read.textFile("/mailData").rdd.filter(
+        x => x.startsWith("Subject: ")).map(
+        x => x.toLowerCase.replaceAll("subject: |re: ","").split(" |,")
       )
       */
       
@@ -53,8 +54,12 @@ object Analysis {
 				)
 				
 				//filter and create pure word collection with indices
-				val stopwords = sc.broadcast(stopwordsFile.collect.toSet)
-				val words = subjects.flatMap(x => x).distinct().filter(x => !stopwords.value.contains(x))
+				val stopwords = sc.broadcast(stopwordsFile)
+                val words = subjects.flatMap(x => x).filter(
+                  x => !stopwords.value.contains(x) && !x.startsWith("=?")).map(
+                  x => x.replaceAll("[^A-Za-z0-9]", "")).filter(
+                  x => x.length > 0
+                ).distinct()
 				val w2i = words.zipWithIndex
 				val i2w = w2i.map(_.swap)
 
@@ -62,29 +67,29 @@ object Analysis {
 				val ix2word = i2w.collectAsMap()
 			  
 				//creates and caches the input vectors for lda
-				val inputData = subjects.zipWithIndex.map { case (k,v) =>
-					val counts = new mutable.HashMap[Int,Double]() 
-					for(y <- k) {
-					   if (word2ix.value.contains(y)){
-						 val idx = word2ix.value.get(y).get.toInt
-						 counts(idx) = counts.getOrElse(idx,0.0) + 1.0
-					   }
-					}
-					(v, Vectors.sparse(word2ix.value.size, counts.toSeq))
-				}.cache()
+                val inputData = subjects.zipWithIndex.map { case (k,v) =>
+                  val counts = new mutable.HashMap[Int,Double]() 
+                    for(y <- k) {
+                      if (word2ix.value.contains(y)){
+                        val idx = word2ix.value.get(y).get.toInt
+                        counts(idx) = counts.getOrElse(idx,0.0) + 1.0
+                      }
+                     }
+                     (v, Vectors.sparse(word2ix.value.size, counts.toSeq))
+                }.cache()
 
-				val ldaModel = new LDA().setK(10).run(inputData)
+				val ldaModel = new LDA().setK(100).setTopicConcentration(1.00000001).setDocConcentration(1.0000001).run(inputData)
 
 				val descriptions = ldaModel.describeTopics(10)
 
 				//organize and write model output
-				var topic = ""
-				descriptions.foreach{ tuple =>
-					tuple._1.foreach{ idx =>
-						topic = topic + ix2word.get(idx.toInt).get + " "
-					}
-					topic = topic + "\n"
-				}
+                var topic = ""
+                descriptions.foreach{ tuple =>
+                  tuple._1.foreach{ idx =>
+                    topic = topic + ix2word.get(idx.toInt).get + " "
+                  }
+                  topic = topic + "\n"
+                }
 				out.println(topic)
 				out.flush()
 				s.close()
