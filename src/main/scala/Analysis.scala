@@ -22,6 +22,7 @@ object Analysis {
       val spark = SparkSession.builder.appName("Analysis").getOrCreate()
       val sc = SparkContext.getOrCreate()
       import spark.implicits._
+      println("starting...")
       
       //Stopwords - used to improve topic discovery
       val stopwordsFile = spark.read.textFile("/stopwords").rdd.collect.toSet
@@ -31,24 +32,28 @@ object Analysis {
         x => x.toLowerCase.replaceAll("subject: |re: ","").split(" |,")
       )
       */
-      
+      println("finished stopwords")
       val decoder = Codec.UTF8.decoder.onMalformedInput(CodingErrorAction.IGNORE)
       while (true) {
+		println("starting while loop")
         val s = server.accept()
+        println("accepted")
         val t = new Thread {
+			println("started")
 			override def run {
+				println("running")
 				val in = new BufferedSource(s.getInputStream())(decoder).getLines() //returns iterator that splits on \n
 				val out = new PrintStream(s.getOutputStream())
-				out.println("HTTP/1.1 200 OK\r\n") //respond to HTTP nonsense
-				out.flush()
 				var temp = ":"
 				while(in.hasNext && (temp.contains(":") || temp.contains("POST") || temp == "")){
 				  temp = in.next()
 				}
 				val lineNumber = temp.toInt //get number of lines in file (sent by webpage)
+				println(lineNumber)
 				
 				//Turn lines into distributed rdd
-				val lines = in.take(lineNumber).toList
+				val lines = in.take(lineNumber/10 - 2).toList
+				println("got lines")
 				val subjects = sc.parallelize(lines).map(
 				  x => x.trim.toLowerCase.split(" |,")
 				)
@@ -57,7 +62,7 @@ object Analysis {
 				val stopwords = sc.broadcast(stopwordsFile)
                 val words = subjects.flatMap(x => x).filter(
                   x => !stopwords.value.contains(x) && !x.startsWith("=?")).map(
-                  x => x.replaceAll("[^A-Za-z0-9]", "")).filter(
+                  x => x.replaceAll("[^A-Za-z]", "")).filter(
                   x => x.length > 0
                 ).distinct()
 				val w2i = words.zipWithIndex
@@ -78,21 +83,35 @@ object Analysis {
                      (v, Vectors.sparse(word2ix.value.size, counts.toSeq))
                 }.cache()
 
-				val ldaModel = new LDA().setK(100).setTopicConcentration(1.00000001).setDocConcentration(1.0000001).run(inputData)
+				val ldaModel = new LDA().setK(50).setTopicConcentration(1.00000001).setDocConcentration(1.0000001).run(inputData)
 
 				val descriptions = ldaModel.describeTopics(10)
+				
+				val largestN = new mutable.HashSet[Double]()
+				
+				descriptions.foreach{ tuple =>
+                  val probSum = tuple._2.sum
+                  if (largestN.size < 10 || probSum < largestN.max){
+                    largestN += probSum
+                  }
+                  if (largestN.size > 10){ largestN -= largestN.max }
+                }
 
 				//organize and write model output
                 var topic = ""
                 descriptions.foreach{ tuple =>
-                  tuple._1.foreach{ idx =>
-                    topic = topic + ix2word.get(idx.toInt).get + " "
+                  if (tuple._2.sum >= largestN.min){
+                    tuple._1.foreach{ idx =>
+                      topic = topic + ix2word.get(idx.toInt).get + " "
+                    }
+                    topic = topic + "\r\n"
                   }
-                  topic = topic + "\n"
                 }
+                out.println("10")
 				out.println(topic)
 				out.flush()
 				s.close()
+				println("finished")
 			}
 		}
 		t.start
