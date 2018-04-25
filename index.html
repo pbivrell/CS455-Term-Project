@@ -3,51 +3,51 @@
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
         <link rel="stylesheet" href="./test.css"/>
 
-         <style>
-            html, body, #map-canvas {
-                height: 100%;
-                width: 100%;
-                margin: 0px;
-                padding: 0px
-            }
+        <style>
+html, body, #map-canvas {
+    height: 100%;
+    width: 100%;
+    margin: 0px;
+    padding: 0px
+}
         </style>
         <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=visualization"></script>
         <script>
             var map, pointarray, heatmap;
- 
 
-            var points = [];
-            points.push(new google.maps.LatLng(37.782551, -122.445368));
-            points.push(new google.maps.LatLng(37.782551, -122.984322));
-            points.push(new google.maps.LatLng(37.782551, -122.445368));
- 
- 
-            function initialize() {
-             // the map's options
-                var mapOptions = {
-                    zoom: 13,
-                    center: new google.maps.LatLng(37.774546, -122.433523),
-                    mapTypeId: google.maps.MapTypeId.SATELLITE
-                };
- 
-                map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
- 
-                var pointArray = new google.maps.MVCArray(points);
- 
-            // what data for the heatmap and how to display it
-                heatmap = new google.maps.visualization.HeatmapLayer({
-                    data: pointArray,
-                    radius: 50
-                });
- 
-            // placing the heatmap on the map
-                heatmap.setMap(map);
-            }
- 
-            // as soon as the document is ready the map is initialized
-            google.maps.event.addDomListener(window, 'load', initialize);
- 
-    </script>
+
+var points = [];
+//points.push(new google.maps.LatLng(37.782551, -122.445368));
+//points.push(new google.maps.LatLng(37.782551, -122.984322));
+//points.push(new google.maps.LatLng(37.782551, -122.445368));
+
+
+function initialize() {
+    // the map's options
+    var mapOptions = {
+        zoom: 5,
+        center: new google.maps.LatLng(39.774546, 105.433523),
+        mapTypeId: google.maps.MapTypeId.SATELLITE
+    };
+
+    map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+
+    var pointArray = new google.maps.MVCArray(points);
+
+    // what data for the heatmap and how to display it
+    heatmap = new google.maps.visualization.HeatmapLayer({
+        data: pointArray,
+        radius: 50
+    });
+
+    // placing the heatmap on the map
+    heatmap.setMap(map);
+}
+
+// as soon as the document is ready the map is initialized
+//google.maps.event.addDomListener(window, 'load', initialize);
+
+        </script>
     </head>
     <body>
 
@@ -65,26 +65,27 @@
             <div class="tab-pane fade in active" id="email">
                 <p>Upload your .mbox file here and let the wonders of apache spark and LDA categorize you emails based on subject lines</p>
                 <input name="myFile" type="file" id="f">
+                <div id="loading"><p></p></div>
             </div>
             <div class="tab-pane fade" id="location">
                 <p>Upload your search history and map activity and watch as spark will pick out every place Google thinks you've ever been</p>
                 <input name="myFile1" type="file" id="f1">
-                <input name="myFile2" type="file" id="f2">
+                <div id="loading"><p></p></div>
                 <div id="map-canvas"></div>
             </div>
         </div>
 
 
         <div id="progressBar"><div></div></div>
-        
+
     </body>
 
 
 
     <script
-                                                       src="https://code.jquery.com/jquery-3.3.1.js"
-                                                       integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60="
-                                                       crossorigin="anonymous"></script>
+             src="https://code.jquery.com/jquery-3.3.1.js"
+             integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60="
+             crossorigin="anonymous"></script>
 
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 
@@ -93,82 +94,109 @@
         //        var progressBarWidth = percent * $element.width() / 100;
         //        $element.find('div').animate({ width: progressBarWidth }, 500).html(percent + "% ");
         //}
-        function sendToDanielsCluster(result){
-                console.log(result)
-                $.post("http://helena.cs.colostate.edu:47339",result)
-                $.post("http://hartford.cs.colostate.edu:47339",result)
-                $.post("http://providence.cs.colostate.edu:47339",result)
-                $.post("http://juneau.cs.colostate.edu:47339",result)
-                $.post("http://concord.cs.colostate.edu:47339",result)
-                $.post("http://charleston.cs.colostate.edu:47339",result)
-                $.post("http://boise.cs.colostate.edu:47339",result)
-                $.post("http://bismarck.cs.colostate.edu:47339",result)
-                $.post("http://topeka.cs.colostate.edu:47339",result)
-                $.post("http://dover.cs.colostate.edu:47339",result)
-                $.post("http://carson-city.cs.colostate.edu:47339",result)
-                $.post("http://sacramento.cs.colostate.edu:47339",result)
-        }
-    
-    
-        var loaded = "";
-        function loadLocationData() {
+        document.getElementById('f1').onchange = function() {
             if (!this.files.length) return;
-            readFileByChunk(this.files[0], false, function(result){
-                if(loaded == ""){
-                    console.log("First")
-                    loaded = result;
-                }else{
-                    console.log("BOTH")
-                    sendToDanielsCluster(result + "\n" + loaded + "\r\n")
-                }
-            });
-        }
-        document.getElementById('f1').onchange = loadLocationData;
-        document.getElementById('f2').onchange = loadLocationData;
-        document.getElementById('f').onchange = function() {
-            if (!this.files.length) return;
-            readFileByChunk(this.files[0], true,function(result){
-                result += "\r\n"
-                $.post("http://olympia.cs.colostate.edu:45409",result)
-                $.post("http://boise.cs.colostate.edu:45409",result)
-                $.post("http://albany.cs.colostate.edu:45409",result)
-                $.post("http://annapolis.cs.colostate.edu:45409",result)
-                $.post("http://baton-rouge.cs.colostate.edu:45409", result)
-                $.post("http://bismarck.cs.colostate.edu:45409",result)
-                $.post("http://sacramento.cs.colostate.edu:45409", result)
-                $.post("http://carson-city.cs.colostate.edu:45409", result)
-                $.post("http://charleston.cs.colostate.edu:45409", result)
-                $.post("http://cheyenne.cs.colostate.edu:45409", result)
-                $.post("http://austin.cs.colostate.edu:45409", result)
-                $.post("http://salem.cs.colostate.edu:45409", result)
-                $.post("http://phoenix.cs.colostate.edu:45409", result)
-                $.post("http://pierre.cs.colostate.edu:45409", result)
-                $.post("http://salt-lake-city.cs.colostate.edu:45409",result)
-            });
+            readFileByChunk(this.files[0],false,function(result){
+                lines = result.split("\n").length
+                out = lines + "\n" + result 
+                //console.log(out)
+                loading = true
+                $.post("http://juneau.cs.colostate.edu:45300/locations",out, function(data){
+                    returned = data.split("\n")
+                    returned.forEach(function(element){
+                        lat = parseFloat(element.split(",")[0])
+                        lng = parseFloat(element.split(",")[1])
+                        if(!isNaN(lat) && !isNaN(lng)){
+                            //console.log(lat)
+                            //console.log(lng)
+                            points.push(new google.maps.LatLng(lat,lng))
+                        }
+                    });
+                    loading = false
+                    initialize()
+                })
+                var refreshId = setInterval(function() {
+                    $("#loading p").append(".")
+                    if (!loading) {
+                        $("#loading p").text("Done!")
+                        clearInterval(refreshId);
+                    }
+                }, 1000);
+            })
         };
+document.getElementById('f').onchange = function() {
+    if (!this.files.length) return;
+    readFileByChunk(this.files[0], true,function(result){
+        lines = result.split("\n").length
+        out = lines + "\n" + result
+        //console.log(out)
+        loading = true
+        $.post("http://juneau.cs.colostate.edu:45300/email",out, function(data){
+            loading = false
+            $("#loading p").text(data)
+        })
+        var refreshId = setInterval(function() {
+            $("#loading p").append(".")
+            if (!loading) {
+                clearInterval(refreshId);
+            }
+        }, 1000);
+
+    });
+};
+
 function readFileByChunk(file, subjectsOnly, callback){
     var CHUNK_SIZE = 1000000;
     var offset = 0;
     var length = 0
     var fr = new FileReader();
     toBeSent = ""
+    i = 1;
     fr.onload = function() {
-        //$("#done").text("REMAINING: ", ((file.size - offset) / file.size * 100).toFixed(2), "%");
+
+        st = "Uploading file: " + ((offset) / file.size * 100).toFixed(2) + "%"
+        $("#loading p").text(st);
         //progress((file.size - offset) / file.size * 100, $("#progressBar"))
-        console.log("REMAINING: ", ((file.size - offset) / file.size * 100).toFixed(2), "%");
+        //console.log("REMAINING: ", ((file.size - offset) / file.size * 100).toFixed(2), "%");
         lines = fr.result.split(/\r?\n/);
-        length += lines.length;
-            lines.forEach(function(element) {
-                if(subjectsOnly){
-                    if(element.startsWith("Subject:")){
-                        toBeSent += element + "\n"
-                    }
-                }else{
+        //console.log(toBeSent)
+        var pair = ""
+        lines.forEach(function(element) {
+            if(subjectsOnly){
+                if(element.startsWith("Subject:")){
                     toBeSent += element + "\n"
                 }
-            });
-            offset += CHUNK_SIZE;
-            seek();
+            }else{
+                if(element.includes("latitudeE7")) {
+                    //console.log("Has latitude")
+                    data = element.split(":")
+                    if(data.length == 2){
+                        pair = data[1]
+                    }
+                    //console.log("lat is ", pair)
+                }
+                if(element.includes("longitudeE7")){
+                    //console.log("Has Longitude")
+                    //console.log(pair)
+                    if(pair != "" /*&& toBeSent.length < 1000000*/){
+                        //console.log("Has a lat")
+                        data = element.split(":")
+                        if(data.length == 2){
+                            //console.log("Has a value",data[1])
+                            data2 = data[1].split(",")
+                            //console.log("BLAHD",data2)
+                            if(data2.length == 2){
+                                //console.log(pair + data2[0] + "\n")
+                                toBeSent += pair + data2[0] + "\n"
+                            }
+                        }
+                    }
+                    pair = ""
+                }
+            }
+        });
+        offset += CHUNK_SIZE;
+        seek();
     }
     fr.onerror = function() {
         callback("ERROR")
@@ -176,8 +204,8 @@ function readFileByChunk(file, subjectsOnly, callback){
     seek();
     function seek() {
         if (offset >= file.size) {
-            console.log("DONE")
-            return callback(length + "\n"+toBeSent);
+            $("#loading p").text("Processing Data");
+            return callback(toBeSent);
         }
         var slice = file.slice(offset, offset + CHUNK_SIZE);
         fr.readAsText(slice);
