@@ -48,7 +48,7 @@ func sendToKevinsCluster(data string) string {
 func connectAndSend(cons []string, data string) string{
     for _, machine := range(cons) {
         conn, err := net.Dial("tcp",machine)
-        fmt.Println("Attempting to connect to ",machine)
+        //fmt.Println("Attempting to connect to ",machine)
         if err == nil {
             fmt.Println("Connected to ", machine)
             lines := len(strings.Split(data,"\n"))
